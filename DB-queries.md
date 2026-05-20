@@ -1,6 +1,3 @@
-צודק, הנה כל התוכן מרוכז בבלוק קוד אחד רציף של Markdown, מה שיאפשר לך להעתיק אותו לקובץ בשלמותו בקלות:
-
-```markdown
 # Database Documentation - Project Motzklist
 
 This document consolidates all SQL operations required for development.
@@ -255,6 +252,4 @@ JOIN school s ON g.sid = s.sid
 LEFT JOIN requirement r ON g.gid = r.gid
 WHERE r.rid IS NULL
 ORDER BY s.sname, g.gname;
-```
-
 ```
