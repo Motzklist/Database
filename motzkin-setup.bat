@@ -9,13 +9,13 @@ echo      Motzkin Database Utility
 echo ==========================================
 echo.
 
-rem --- בקשת סיסמה מהמשתמש ---
+rem Prompt user for password
 set /p PGPASSWORD=Enter PostgreSQL password: 
 
-rem --- הגדרת מסלול psql מלא ---
+rem Set full psql path
 set PSQL="C:\Program Files\PostgreSQL\17\bin\psql.exe"
 
-rem --- הגדרות בסיס ---
+rem Basic configuration
 set DB_NAME=motzklist
 set DB_USER=postgres
 set DB_HOST=127.0.0.1
@@ -31,7 +31,6 @@ echo 5. All (create DB if not exists + create tables)
 set /p OPTION=Enter your choice [1-5]:
 
 echo.
-
 if "%OPTION%"=="1" goto CREATE_DB
 if "%OPTION%"=="2" goto CREATE_TABLES
 if "%OPTION%"=="3" goto DROP_TABLES
@@ -54,7 +53,7 @@ goto END
 
 :DROP_TABLES
 echo Dropping all tables in "%DB_NAME%"...
-rem --- מחיקת כל טבלאות קיימות
+rem Drop all existing tables
 %PSQL% -U %DB_USER% -h %DB_HOST% -d %DB_NAME% -c "DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname='public') LOOP EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE'; END LOOP; END $$;"
 goto END
 

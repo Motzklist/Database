@@ -1,226 +1,260 @@
+צודק, הנה כל התוכן מרוכז בבלוק קוד אחד רציף של Markdown, מה שיאפשר לך להעתיק אותו לקובץ בשלמותו בקלות:
+
+```markdown
 # Database Documentation - Project Motzklist
 
-This document consolidates the table structure (Schema) and all SQL operations required for development.
-The system is built in a hierarchy: **School -> Class -> Equipment**.
-
----
+This document consolidates all SQL operations required for development.
+The system architecture is built on: Schools, Grades, Equipment Catalog, Requirements, Users, Shopping Carts, and Order History.
 
 ## Quick Start
-Run the ```motzkin-setup.bat```.
+Run the `motzkin-setup.bat`.
 Enter your Postgres password, and then you can choose to configure the tables.
 
-
-## 0. Table Structure (Schema Creation)
-The following code generates the necessary tables for the system.
-*This must be run once when setting up the environment.*
-
-```sql
--- 1. Schools Table
-CREATE TABLE schools (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 2. Classes Table
-CREATE TABLE classes (
-    id BIGSERIAL PRIMARY KEY,
-    school_id BIGINT NOT NULL,
-    name TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    CONSTRAINT fk_school
-        FOREIGN KEY (school_id)
-        REFERENCES schools(id)
-        ON DELETE CASCADE
-);
-
--- Index to improve performance when retrieving classes by school
-CREATE INDEX idx_classes_school_id ON classes(school_id);
-
--- 3. Equipment Table
-CREATE TABLE equipment (
-    id BIGSERIAL PRIMARY KEY,
-    class_id BIGINT NOT NULL,
-    name TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1,
-    price DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-
-    CONSTRAINT fk_class
-        FOREIGN KEY (class_id)
-        REFERENCES classes(id)
-        ON DELETE CASCADE
-);
-
--- Index to improve performance when retrieving equipment by class
-CREATE INDEX idx_equipment_class_id ON equipment(class_id);
-```
 ---
 
-## 1. School Management (Schools)
+## 1. School Management (school)
 
 **Note to Developers:** All values marked with `$1`, `$2`, etc. are parameters (Prepared Statements).
 
 ### Read
-**Get list of all schools** (For main screen / Dropdown)
+**Get list of all schools**
 ```sql
-SELECT id, name, created_at
-FROM schools
-ORDER BY name ASC;
+-- Retrieve all schools for dropdown menus
+SELECT sid, sname
+FROM school
+ORDER BY sname ASC;
 ```
 
 **Get single school details by ID**
 ```sql
-SELECT * FROM schools WHERE id = $1;
+SELECT * FROM school WHERE sid = $1;
 ```
 
 ### Create
 **Add a new school**
-Returns the created ID.
 ```sql
-INSERT INTO schools (name)
+INSERT INTO school (sname)
 VALUES ($1)
-RETURNING id;
+RETURNING sid;
 ```
 
-### Update
-**Change school name**
+### Update & Delete
 ```sql
-UPDATE schools
-SET name = $2
-WHERE id = $1;
-```
+-- Update school name
+UPDATE school
+SET sname = $2
+WHERE sid = $1;
 
-### Delete
-**Delete school**
-*Note:* This action will automatically delete **all** classes and equipment belonging to this school.
-```sql
-DELETE FROM schools WHERE id = $1;
+-- Delete school (Cascades to grades, requirements, carts, and orders)
+DELETE FROM school WHERE sid = $1;
 ```
 
 ---
 
-## 2. Class Management (Classes)
+## 2. Grade Management (grade)
 
 ### Read
-**Get list of classes for a specific school**
+**Get list of grades for a specific school**
 ```sql
-SELECT id, name, created_at
-FROM classes
-WHERE school_id = $1
-ORDER BY name ASC;
+SELECT gid, gname
+FROM grade
+WHERE sid = $1
+ORDER BY gname ASC;
 ```
 
 ### Create
-**Add a class to a school**
-Requires providing the School ID ($1) and the Class Name ($2).
+**Add a grade to a school**
 ```sql
-INSERT INTO classes (school_id, name)
+INSERT INTO grade (sid, gname)
 VALUES ($1, $2)
-RETURNING id;
+RETURNING gid;
 ```
 
-### Update
-**Change class name**
+### Update & Delete
 ```sql
-UPDATE classes
-SET name = $2
-WHERE id = $1;
-```
+-- Update grade name
+UPDATE grade
+SET gname = $2
+WHERE gid = $1;
 
-### Delete
-**Delete class**
-*Note:* This action will automatically delete the **entire** equipment list of the class.
-```sql
-DELETE FROM classes WHERE id = $1;
+-- Delete grade
+DELETE FROM grade WHERE gid = $1;
 ```
 
 ---
 
-## 3. Equipment Management (Equipment)
+## 3. Equipment Catalog (equipment)
 
 ### Read
-**Get full equipment list for a class**
-Includes calculation of total row price (quantity * unit price).
+**Get full equipment catalog**
+```sql
+SELECT eid, ename, price
+FROM equipment
+ORDER BY ename ASC;
+```
+
+### Create & Update
+```sql
+-- Add item to global catalog
+INSERT INTO equipment (ename, price)
+VALUES ($1, $2)
+RETURNING eid;
+
+-- Update existing equipment item
+UPDATE equipment
+SET ename = $2, price = $3
+WHERE eid = $1;
+```
+
+---
+
+## 4. Grade Requirements (requirement)
+
+### Read
+**Get full equipment list required for a specific grade**
+```sql
+-- Calculates the total row price based on required quantity
+SELECT 
+    r.rid,
+    e.eid, 
+    e.ename, 
+    r.quantity, 
+    e.price, 
+    (r.quantity * e.price) as total_row_price
+FROM requirement r
+JOIN equipment e ON r.eid = e.eid
+WHERE r.gid = $1
+ORDER BY e.ename ASC;
+```
+
+### Create & Delete
+```sql
+-- Link an equipment item to a grade with a specific quantity
+INSERT INTO requirement (gid, eid, quantity)
+VALUES ($1, $2, $3)
+RETURNING rid;
+
+-- Remove an item requirement from a grade
+DELETE FROM requirement WHERE rid = $1;
+```
+
+---
+
+## 5. User & Shopping Cart Management
+
+### Read
+**Get current active cart items for a user in a specific grade**
 ```sql
 SELECT 
-    id, 
-    name, 
-    quantity, 
-    price, 
-    (quantity * price) as total_row_price
-FROM equipment
-WHERE class_id = $1
-ORDER BY name ASC;
+    ci.ciid,
+    e.ename,
+    e.price
+FROM cart_item ci
+JOIN cart_entry ce ON ci.ceid = ce.ceid
+JOIN equipment e ON ci.eid = e.eid
+WHERE ce.uid = $1 AND ce.gid = $2;
 ```
 
 ### Create
-**Add item to equipment list**
-Parameters: Class ID ($1), Item Name ($2), Quantity ($3), Price ($4).
+**Open a new cart and add an item**
 ```sql
-INSERT INTO equipment (class_id, name, quantity, price)
-VALUES ($1, $2, $3, $4)
-RETURNING id;
-```
+-- Step 1: Create the cart entry
+INSERT INTO cart_entry (gid, uid)
+VALUES ($1, $2)
+RETURNING ceid;
 
-### Update
-**Update existing equipment item**
-Allows updating the name, quantity, and price at once.
-```sql
-UPDATE equipment
-SET name = $2, quantity = $3, price = $4
-WHERE id = $1;
-```
-
-### Delete
-**Delete specific equipment item from the list**
-```sql
-DELETE FROM equipment WHERE id = $1;
+-- Step 2: Add item to the cart entry
+INSERT INTO cart_item (ceid, eid)
+VALUES ($1, $2)
+RETURNING ciid;
 ```
 
 ---
 
-## 4. Reports and Advanced Queries (Analytics)
+## 6. Orders & Purchase History
+
+### Read
+**Get purchase history for a specific user**
+```sql
+SELECT oid, gid, purchase_date, total_amount
+FROM orders
+WHERE uid = $1
+ORDER BY purchase_date DESC;
+```
+
+**Get detailed receipt for a specific order**
+```sql
+SELECT 
+    e.ename, 
+    oi.quantity, 
+    oi.price_at_purchase,
+    (oi.quantity * oi.price_at_purchase) as total_item_cost
+FROM order_item oi
+JOIN equipment e ON oi.eid = e.eid
+WHERE oi.oid = $1;
+```
+
+### Create (Checkout Process)
+```sql
+-- Step 1: Create the main order record
+INSERT INTO orders (uid, gid, total_amount)
+VALUES ($1, $2, $3)
+RETURNING oid;
+
+-- Step 2: Move items from cart to order_item (saving the static price)
+INSERT INTO order_item (oid, eid, quantity, price_at_purchase)
+VALUES ($1, $2, $3, $4);
+
+-- Step 3: Clear the active cart after successful order
+DELETE FROM cart_entry WHERE ceid = $1;
+```
+
+---
+
+## 7. Reports and Advanced Queries (Analytics)
 
 ### Global Equipment Search
-"Who uses the Benny Goren math book?" - Returns all classes and schools that have an item containing the search string.
+"Who requires the Benny Goren math book?"
 ```sql
 SELECT 
-    s.name as school_name,
-    c.name as class_name,
-    e.name as item_name,
-    e.quantity
-FROM equipment e
-JOIN classes c ON e.class_id = c.id
-JOIN schools s ON c.school_id = s.id
-WHERE e.name ILIKE '%' || $1 || '%' -- $1 is the search term
-ORDER BY s.name, c.name;
+    s.sname as school_name,
+    g.gname as grade_name,
+    e.ename as item_name,
+    r.quantity
+FROM requirement r
+JOIN grade g ON r.gid = g.gid
+JOIN school s ON g.sid = s.sid
+JOIN equipment e ON r.eid = e.eid
+WHERE e.ename ILIKE '%' || $1 || '%'
+ORDER BY s.sname, g.gname;
 ```
 
-### School Cost Report (Budget)
-Calculates the cost to equip the entire school (sum of all equipment in all classes).
+### Grade Budget Report
+Calculates the total cost to equip an entire grade based on its requirements.
 ```sql
 SELECT 
-    s.name as school_name,
-    COUNT(DISTINCT c.id) as total_classes,
-    COALESCE(SUM(e.quantity * e.price), 0) as total_budget_needed
-FROM schools s
-LEFT JOIN classes c ON s.id = c.school_id
-LEFT JOIN equipment e ON c.id = e.class_id
-WHERE s.id = $1
-GROUP BY s.id, s.name;
+    g.gname as grade_name,
+    COUNT(r.rid) as total_unique_items,
+    COALESCE(SUM(r.quantity * e.price), 0) as total_budget_needed
+FROM grade g
+LEFT JOIN requirement r ON g.gid = r.gid
+LEFT JOIN equipment e ON r.eid = e.eid
+WHERE g.sid = $1
+GROUP BY g.gid, g.gname
+ORDER BY g.gname;
 ```
 
-### "Empty Classes" Report
-Finding classes that have no equipment entered yet (important for auditing).
+### "Empty Grades" Report
+Finding grades that have no equipment requirements entered yet (important for auditing).
 ```sql
 SELECT 
-    s.name as school_name,
-    c.name as class_name
-FROM classes c
-JOIN schools s ON c.school_id = s.id
-LEFT JOIN equipment e ON c.id = e.class_id
-WHERE e.id IS NULL
-ORDER BY s.name;
+    s.sname as school_name,
+    g.gname as grade_name
+FROM grade g
+JOIN school s ON g.sid = s.sid
+LEFT JOIN requirement r ON g.gid = r.gid
+WHERE r.rid IS NULL
+ORDER BY s.sname, g.gname;
+```
+
 ```
