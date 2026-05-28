@@ -1,4 +1,4 @@
--- 1. Create Tables
+-- Motzklist DB schema. Mock data lives in seed.sql.
 
 CREATE TABLE school (
     sid BIGSERIAL PRIMARY KEY,
@@ -9,7 +9,7 @@ CREATE TABLE grade (
     gid BIGSERIAL PRIMARY KEY,
     sid BIGINT NOT NULL,
     gname TEXT NOT NULL,
-    
+
     CONSTRAINT fk_school
         FOREIGN KEY (sid)
         REFERENCES school(sid)
@@ -118,54 +118,3 @@ CREATE TABLE order_item (
         REFERENCES equipment(eid)
         ON DELETE CASCADE
 );
-
--- 2. Insert Sample Data
-
--- Insert Schools
-INSERT INTO school (sname) VALUES 
-('Ort Kiryat Motzkin'),
-('Rabin High School');
-
--- Insert Grades
-INSERT INTO grade (sid, gname) VALUES 
-(1, 'Grade 10 - Science'),
-(1, 'Grade 11 - Literature'),
-(2, 'Grade 10 - General');
-
--- Insert Equipment Catalog
-INSERT INTO equipment (ename, price) VALUES 
-('Benny Goren Math 4 Units', 85.50),
-('Physics Textbook Part 1', 120.00),
-('Spiral Notebook 40 pages', 5.00),
-('Blue Pen Pack', 12.50);
-
--- Insert Requirements (What each grade needs)
-INSERT INTO requirement (gid, eid, quantity) VALUES 
-(1, 1, 1),
-(1, 2, 1),
-(1, 3, 5),
-(2, 3, 10),
-(2, 4, 2);
-
--- Insert Users
-INSERT INTO users (uname, password) VALUES 
-('roi', 'hashed_pass_123'),
-('avner', 'hashed_pass_456');
-
--- Insert an active Shopping Cart for user 'roi' (for Grade 10 - Science)
-INSERT INTO cart_entry (gid, uid) VALUES 
-(1, 1);
-
--- Insert Items into the active Shopping Cart
-INSERT INTO cart_item (ceid, eid) VALUES 
-(1, 1),
-(1, 3);
-
--- Insert a completed Order for user 'avner' (for Grade 11 - Literature)
-INSERT INTO orders (uid, gid, total_amount) VALUES 
-(2, 2, 75.00);
-
--- Insert Order Items (Saving the state of the prices at purchase)
-INSERT INTO order_item (oid, eid, quantity, price_at_purchase) VALUES 
-(1, 3, 10, 5.00),
-(1, 4, 2, 12.50);
