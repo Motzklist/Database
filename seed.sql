@@ -3,48 +3,55 @@
 -- (e.g. /api/equipment?school_id=1&grade_id=11). Sequences are reset at the
 -- end so subsequent inserts from the running app pick up at the next free ID.
 
-INSERT INTO school (sid, sname) VALUES
-  (1, 'Ben Gurion'),
-  (2, 'ORT'),
-  (3, 'Brener'),
-  (4, 'Herzel'),
-  (5, 'Begin');
+-- Make sure Hebrew text round-trips correctly regardless of the client's
+-- default encoding (e.g. psql on Windows).
+SET client_encoding = 'UTF8';
+
+-- sname is the default (English) name; sname_he is the Hebrew translation.
+INSERT INTO school (sid, sname, sname_he) VALUES
+  (1, 'Ben Gurion', 'בן גוריון'),
+  (2, 'ORT',        'אורט'),
+  (3, 'Brener',     'ברנר'),
+  (4, 'Herzel',     'הרצל'),
+  (5, 'Begin',      'בגין');
 
 -- Each school gets its own grade rows (gid is unique).
 -- gid scheme: sid * 10 + (grade_number - 8)
 --   school 1 -> 11 (9th), 12 (10th), 13 (11th), 14 (12th)
 --   school 2 -> 21..24, ... etc.
-INSERT INTO grade (gid, sid, gname) VALUES
-  (11, 1, '9th Grade'),
-  (12, 1, '10th Grade'),
-  (13, 1, '11th Grade'),
-  (14, 1, '12th Grade'),
-  (21, 2, '9th Grade'),
-  (22, 2, '10th Grade'),
-  (23, 2, '11th Grade'),
-  (24, 2, '12th Grade'),
-  (31, 3, '9th Grade'),
-  (32, 3, '10th Grade'),
-  (33, 3, '11th Grade'),
-  (34, 3, '12th Grade'),
-  (41, 4, '9th Grade'),
-  (42, 4, '10th Grade'),
-  (43, 4, '11th Grade'),
-  (44, 4, '12th Grade'),
-  (51, 5, '9th Grade'),
-  (52, 5, '10th Grade'),
-  (53, 5, '11th Grade'),
-  (54, 5, '12th Grade');
+-- gname is the default (English) name; gname_he is the Hebrew translation.
+INSERT INTO grade (gid, sid, gname, gname_he) VALUES
+  (11, 1, '9th Grade',  'כיתה ט'''),
+  (12, 1, '10th Grade', 'כיתה י'''),
+  (13, 1, '11th Grade', 'כיתה י"א'),
+  (14, 1, '12th Grade', 'כיתה י"ב'),
+  (21, 2, '9th Grade',  'כיתה ט'''),
+  (22, 2, '10th Grade', 'כיתה י'''),
+  (23, 2, '11th Grade', 'כיתה י"א'),
+  (24, 2, '12th Grade', 'כיתה י"ב'),
+  (31, 3, '9th Grade',  'כיתה ט'''),
+  (32, 3, '10th Grade', 'כיתה י'''),
+  (33, 3, '11th Grade', 'כיתה י"א'),
+  (34, 3, '12th Grade', 'כיתה י"ב'),
+  (41, 4, '9th Grade',  'כיתה ט'''),
+  (42, 4, '10th Grade', 'כיתה י'''),
+  (43, 4, '11th Grade', 'כיתה י"א'),
+  (44, 4, '12th Grade', 'כיתה י"ב'),
+  (51, 5, '9th Grade',  'כיתה ט'''),
+  (52, 5, '10th Grade', 'כיתה י'''),
+  (53, 5, '11th Grade', 'כיתה י"א'),
+  (54, 5, '12th Grade', 'כיתה י"ב');
 
-INSERT INTO equipment (eid, ename, price) VALUES
-  (101, 'Notebook (Ruled)',            2.50),
-  (102, 'Pencil',                      0.50),
-  (103, 'Math Textbook - Algebra I',  45.00),
-  (201, 'Laptop (Required)',         800.00),
-  (202, 'Engineering Calculator',     35.00),
-  (203, 'Physics Textbook - Advanced', 60.00),
-  (901, 'Binder (3-ring)',             5.00),
-  (902, 'Highlighters',                1.50);
+-- ename is the default (English) name; ename_he is the Hebrew translation.
+INSERT INTO equipment (eid, ename, ename_he, price) VALUES
+  (101, 'Notebook (Ruled)',            'מחברת (שורות)',           2.50),
+  (102, 'Pencil',                      'עיפרון',                  0.50),
+  (103, 'Math Textbook - Algebra I',   'ספר מתמטיקה - אלגברה א''', 45.00),
+  (201, 'Laptop (Required)',           'מחשב נייד (חובה)',        800.00),
+  (202, 'Engineering Calculator',      'מחשבון הנדסי',            35.00),
+  (203, 'Physics Textbook - Advanced', 'ספר פיזיקה - מתקדם',      60.00),
+  (901, 'Binder (3-ring)',             'קלסר (3 טבעות)',           5.00),
+  (902, 'Highlighters',                'מרקרים',                  1.50);
 
 -- Specific lists matching the backend mock:
 --   Ben Gurion 9th (gid 11) -> the "1-9" list

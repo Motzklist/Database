@@ -3,6 +3,18 @@
 This document consolidates all SQL operations required for development.
 The system architecture is built on: Schools, Grades, Equipment Catalog, Requirements, Users, Shopping Carts, and Order History.
 
+## Multi-language names
+
+School, grade, and equipment names are stored in two columns: the base column (`sname` / `gname` / `ename`) holds the default **English** text, and a parallel `*_he` column (`sname_he` / `gname_he` / `ename_he`) holds the optional **Hebrew** translation.
+The `*_he` columns are nullable — a missing translation falls back to the base name. The backend selects the right value per request with:
+
+```sql
+COALESCE(NULLIF(<col>_he, ''), <col>)   -- when the caller asked for Hebrew
+```
+
+The read queries below show the English column for brevity; substitute the
+expression above to return localized names.
+
 ## Quick Start
 Run the `motzkin-setup.bat`.
 Enter your Postgres password, and then you can choose to configure the tables.
