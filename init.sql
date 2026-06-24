@@ -1,14 +1,20 @@
 -- Motzklist DB schema. Mock data lives in seed.sql.
 
+-- Multi-language support: the base name columns (sname/gname/ename) hold the
+-- default (English) text. The *_he columns hold the Hebrew translation and are
+-- nullable so rows without a translation transparently fall back to the base
+-- name (the backend uses COALESCE(NULLIF(<col>_he, ''), <col>)).
 CREATE TABLE school (
     sid BIGSERIAL PRIMARY KEY,
-    sname TEXT NOT NULL
+    sname TEXT NOT NULL,
+    sname_he TEXT
 );
 
 CREATE TABLE grade (
     gid BIGSERIAL PRIMARY KEY,
     sid BIGINT NOT NULL,
     gname TEXT NOT NULL,
+    gname_he TEXT,
 
     CONSTRAINT fk_school
         FOREIGN KEY (sid)
@@ -21,6 +27,7 @@ CREATE INDEX idx_grade_school_id ON grade(sid);
 CREATE TABLE equipment (
     eid BIGSERIAL PRIMARY KEY,
     ename TEXT NOT NULL,
+    ename_he TEXT,
     price DECIMAL(10, 2) NOT NULL DEFAULT 1 CHECK (price >= 0)
 );
 
@@ -89,6 +96,10 @@ CREATE TABLE orders (
     gid BIGINT NOT NULL,
     purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    -- Stripe linkage: set by the checkout webhook when a payment completes.
+    -- Nullable so seeded/legacy orders (and any non-Stripe flow) remain valid.
+    stripe_session_id TEXT,
+    stripe_payment_intent TEXT,
 
     CONSTRAINT fk_user
         FOREIGN KEY(uid)

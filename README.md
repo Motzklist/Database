@@ -47,12 +47,14 @@ erDiagram
     school {
         BIGSERIAL sid PK
         TEXT sname
+        TEXT sname_he
     }
     
     grade {
         BIGSERIAL gid PK
         BIGINT sid FK
         TEXT gname
+        TEXT gname_he
     }
     
     requirement {
@@ -99,6 +101,7 @@ erDiagram
     equipment {
         BIGSERIAL eid PK
         TEXT ename
+        TEXT ename_he
         DECIMAL price
     }
 ```
