@@ -113,5 +113,5 @@ For examples of how to interact with the data, please refer to the [DB-queries.m
 * Generating budget reports and class analytics.
 
 ## License
-This project is licensed under the **Apache License 2.0**. See the [LICENSE](./LICENSE) file for details.
-```
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). See the [LICENSE](LICENSE) file for details.
